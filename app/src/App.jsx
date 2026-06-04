@@ -69,7 +69,7 @@ export default function App() {
       {/* Header */}
       <header className="sticky top-0 z-10 bg-white border-b border-stone-200 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-lg">🏃</span>
+          <span className="text-lg">{isMarco ? '🏃' : '🏃🏼‍♀️'}</span>
           <span className="font-bold text-stone-900 text-base">WO Tracker</span>
         </div>
         <div className="flex items-center gap-2">
