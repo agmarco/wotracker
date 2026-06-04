@@ -14,6 +14,7 @@ export default function App() {
   const [abiStartDate, setAbiStartDate] = useLocalState('wotracker_abi_start', null)
   const { completions, markDone, updateNote, toggleDone } = useCompletions()
   const [viewWeek, setViewWeek] = useState(null)
+  const [showDone, setShowDone] = useState(false)
 
   function handleSelectUser(u) {
     setUser(u)
@@ -59,6 +60,10 @@ export default function App() {
   const prevWeek = weekOptions[weekOptions.indexOf(currentWeek) - 1]
   const nextWeek = weekOptions[weekOptions.indexOf(currentWeek) + 1]
 
+  const visibleWorkouts = showDone
+    ? workouts
+    : workouts.filter(w => !completions[makeKey(w)]?.done)
+
   return (
     <div className="min-h-screen bg-stone-50 flex flex-col">
       {/* Header */}
@@ -67,15 +72,27 @@ export default function App() {
           <span className="text-lg">🏃</span>
           <span className="font-bold text-stone-900 text-base">WO Tracker</span>
         </div>
-        <button
-          onClick={handleSwitchUser}
-          className={`flex items-center gap-2 ${avatarBg} rounded-full pl-2 pr-3 py-1.5 text-sm font-semibold active:scale-95 transition-all`}
-        >
-          <span className="w-5 h-5 rounded-full bg-white/60 flex items-center justify-center text-xs font-bold">
-            {isMarco ? 'M' : 'A'}
-          </span>
-          {isMarco ? 'Marco' : 'Abi'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowDone(v => !v)}
+            className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg border transition-all active:scale-95 ${
+              showDone
+                ? 'bg-stone-800 text-white border-stone-800'
+                : 'bg-white text-stone-500 border-stone-300'
+            }`}
+          >
+            {showDone ? 'Hide done' : 'Show done'}
+          </button>
+          <button
+            onClick={handleSwitchUser}
+            className={`flex items-center gap-2 ${avatarBg} rounded-full pl-2 pr-3 py-1.5 text-sm font-semibold active:scale-95 transition-all`}
+          >
+            <span className="w-5 h-5 rounded-full bg-white/60 flex items-center justify-center text-xs font-bold">
+              {isMarco ? 'M' : 'A'}
+            </span>
+            {isMarco ? 'Marco' : 'Abi'}
+          </button>
+        </div>
       </header>
 
       {/* Body */}
@@ -95,7 +112,7 @@ export default function App() {
         </div>
 
         <WeekView
-          workouts={workouts}
+          workouts={visibleWorkouts}
           weekLabel={weekLabel}
           completions={completions}
           onMarkDone={markDone}
