@@ -9,27 +9,40 @@ export function today() {
   return toDateString(new Date())
 }
 
-// Returns the workout for today, or null
-export function getTodayWorkout(user, abiStartDate) {
-  const t = today()
-  if (user === 'marco') {
-    return marcoPlanByDate.get(t) || null
-  }
-  if (user === 'abi' && abiStartDate) {
-    const week = getAbiCurrentWeek(abiStartDate)
-    const weekData = getAbiWeek(week)
-    return weekData ? { ...weekData, isAbiWeek: true } : null
-  }
-  return null
+export function marcoWorkoutKey(date) {
+  return `marco_${date}`
 }
 
-// Returns the week number (1-based) Abi is currently on
-export function getAbiCurrentWeek(abiStartDate) {
-  const start = new Date(abiStartDate)
-  const now = new Date()
-  const daysDiff = Math.floor((now - start) / (1000 * 60 * 60 * 24))
-  const week = Math.floor(daysDiff / 7) + 1
-  return Math.max(1, Math.min(week, abiTotalWeeks))
+export function abiWorkoutKey(week, id) {
+  return `abi_w${week}_${id}`
+}
+
+function isAddressed(completion) {
+  return !!(completion?.done || completion?.skipped)
+}
+
+// Returns the week number (1-based) Abi is currently on, based on her
+// completion history: the week of her most recently addressed run, or
+// the next week once every run in that week has been done/skipped.
+export function getAbiCurrentWeek(completions = {}) {
+  let latestWeek = null
+  let latestTime = null
+  for (let week = 1; week <= abiTotalWeeks; week++) {
+    const weekData = getAbiWeek(week)
+    if (!weekData) continue
+    for (const r of weekData.runs) {
+      const c = completions[abiWorkoutKey(week, r.id)]
+      if (isAddressed(c) && (!latestTime || c.completedAt > latestTime)) {
+        latestTime = c.completedAt
+        latestWeek = week
+      }
+    }
+  }
+  if (latestWeek === null) return 1
+
+  const weekData = getAbiWeek(latestWeek)
+  const allAddressed = weekData.runs.every(r => isAddressed(completions[abiWorkoutKey(latestWeek, r.id)]))
+  return allAddressed ? Math.min(latestWeek + 1, abiTotalWeeks) : latestWeek
 }
 
 // Returns the calendar week number that contains a given date string
@@ -51,22 +64,29 @@ export function getMarcoWeekRange(weekNum) {
   return [dates[0], dates[dates.length - 1]]
 }
 
-// Returns the current Marco week number based on today's date
-export function getMarcoCurrentWeek() {
-  const t = today()
-  const workout = marcoPlanByDate.get(t)
-  if (workout) return workout.week
-  // Find the nearest week
-  const allDates = [...marcoPlanByDate.keys()].sort()
-  if (t < allDates[0]) return 1
-  if (t > allDates[allDates.length - 1]) return Math.max(...marcoWeeks)
-  // Find week containing today or just before
-  for (let i = allDates.length - 1; i >= 0; i--) {
-    if (allDates[i] <= t) {
-      return marcoPlanByDate.get(allDates[i]).week
+// Returns the week number (1-based) Marco is currently on, based on his
+// completion history: the week of his most recently addressed workout, or
+// the next week once every workout in that week has been done/skipped.
+export function getMarcoCurrentWeek(completions = {}) {
+  let latestWeek = null
+  let latestTime = null
+  for (const week of marcoWeeks) {
+    for (const w of getMarcoWeek(week)) {
+      const c = completions[marcoWorkoutKey(w.date)]
+      if (isAddressed(c) && (!latestTime || c.completedAt > latestTime)) {
+        latestTime = c.completedAt
+        latestWeek = week
+      }
     }
   }
-  return 1
+  if (latestWeek === null) return marcoWeeks[0]
+
+  const allAddressed = getMarcoWeek(latestWeek).every(w => isAddressed(completions[marcoWorkoutKey(w.date)]))
+  if (allAddressed) {
+    const idx = marcoWeeks.indexOf(latestWeek)
+    return marcoWeeks[idx + 1] ?? latestWeek
+  }
+  return latestWeek
 }
 
 export function formatDate(dateStr) {

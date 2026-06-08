@@ -3,7 +3,7 @@ import UserPicker from './components/UserPicker'
 import AbiSetup from './components/AbiSetup'
 import WeekView from './components/WeekView'
 import { useLocalState, useCompletions } from './hooks/useStorage'
-import { getMarcoWeekWorkouts, getMarcoCurrentWeek, getAbiCurrentWeek } from './utils/planUtils'
+import { getMarcoWeekWorkouts, getMarcoCurrentWeek, getAbiCurrentWeek, marcoWorkoutKey, abiWorkoutKey } from './utils/planUtils'
 import { getAbiWeek, abiTotalWeeks } from './data/abi-plan'
 import marcoPlan from './data/marco-plan'
 
@@ -35,16 +35,16 @@ export default function App() {
   let currentWeek, weekLabel, phaseLabel, workouts, makeKey, totalWeeks, weekOptions
 
   if (isMarco) {
-    currentWeek = viewWeek ?? getMarcoCurrentWeek()
+    currentWeek = viewWeek ?? getMarcoCurrentWeek(completions)
     const ww = getMarcoWeekWorkouts(currentWeek)
     workouts = ww
     phaseLabel = ww[0]?.phase || ''
     weekLabel = `Week ${currentWeek} of ${MARCO_WEEKS.length}`
     totalWeeks = MARCO_WEEKS.length
     weekOptions = MARCO_WEEKS
-    makeKey = (w) => `marco_${w.date}`
+    makeKey = (w) => marcoWorkoutKey(w.date)
   } else {
-    const curW = getAbiCurrentWeek(abiStartDate)
+    const curW = getAbiCurrentWeek(completions)
     currentWeek = viewWeek ?? curW
     const weekData = getAbiWeek(currentWeek)
     workouts = weekData ? weekData.runs.map(r => ({ ...r, type: r.type || 'run' })) : []
@@ -53,7 +53,7 @@ export default function App() {
     weekLabel = `Week ${currentWeek} of ${abiTotalWeeks}${flags.length ? ` · ${flags.join(', ')}` : ''}`
     totalWeeks = abiTotalWeeks
     weekOptions = Array.from({ length: abiTotalWeeks }, (_, i) => i + 1)
-    makeKey = (w) => `abi_w${currentWeek}_${w.id}`
+    makeKey = (w) => abiWorkoutKey(currentWeek, w.id)
   }
 
   const avatarBg = isMarco ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'
