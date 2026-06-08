@@ -3,7 +3,7 @@ import UserPicker from './components/UserPicker'
 import AbiSetup from './components/AbiSetup'
 import WeekView from './components/WeekView'
 import { useLocalState, useCompletions } from './hooks/useStorage'
-import { getMarcoWeekWorkouts, getMarcoCurrentWeek, getAbiCurrentWeek, marcoWorkoutKey, abiWorkoutKey } from './utils/planUtils'
+import { getMarcoWeekWorkouts, getMarcoCurrentWeek, getAbiCurrentWeek, marcoWorkoutKey, abiWorkoutKey, today } from './utils/planUtils'
 import { getAbiWeek, abiTotalWeeks } from './data/abi-plan'
 import marcoPlan from './data/marco-plan'
 
@@ -60,11 +60,14 @@ export default function App() {
   const prevWeek = weekOptions[weekOptions.indexOf(currentWeek) - 1]
   const nextWeek = weekOptions[weekOptions.indexOf(currentWeek) + 1]
 
+  const autoCompleteTypes = ['strength', 'rest']
   const visibleWorkouts = showDone
     ? workouts
     : workouts.filter(w => {
         const c = completions[makeKey(w)]
-        return !c?.done && !c?.skipped
+        if (c?.done || c?.skipped) return false
+        if (autoCompleteTypes.includes(w.type) && w.date && w.date <= today()) return false
+        return true
       })
 
   return (

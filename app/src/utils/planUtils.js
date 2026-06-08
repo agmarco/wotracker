@@ -21,6 +21,12 @@ function isAddressed(completion) {
   return !!(completion?.done || completion?.skipped)
 }
 
+// Strength and rest workouts aren't manually tracked — treat past ones as auto-complete
+function isAutoAddressed(workout) {
+  const autoTypes = ['strength', 'rest']
+  return autoTypes.includes(workout.type) && (!workout.date || workout.date <= today())
+}
+
 // Returns the week number (1-based) Abi is currently on, based on her
 // completion history: the week of her most recently addressed run, or
 // the next week once every run in that week has been done/skipped.
@@ -81,7 +87,10 @@ export function getMarcoCurrentWeek(completions = {}) {
   }
   if (latestWeek === null) return marcoWeeks[0]
 
-  const allAddressed = getMarcoWeek(latestWeek).every(w => isAddressed(completions[marcoWorkoutKey(w.date)]))
+  const allAddressed = getMarcoWeek(latestWeek).every(w => {
+    const c = completions[marcoWorkoutKey(w.date)]
+    return isAddressed(c) || isAutoAddressed(w)
+  })
   if (allAddressed) {
     const idx = marcoWeeks.indexOf(latestWeek)
     return marcoWeeks[idx + 1] ?? latestWeek
