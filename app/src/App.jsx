@@ -12,7 +12,7 @@ const MARCO_WEEKS = [...new Set(marcoPlan.map(w => w.week))].sort((a, b) => a - 
 export default function App() {
   const [user, setUser] = useLocalState('wotracker_user', null)
   const [abiStartDate, setAbiStartDate] = useLocalState('wotracker_abi_start', null)
-  const { completions, markDone, updateNote, toggleDone } = useCompletions()
+  const { completions, markDone, updateNote, toggleDone, toggleSkipped } = useCompletions()
   const [viewWeek, setViewWeek] = useState(null)
   const [showDone, setShowDone] = useState(false)
 
@@ -62,7 +62,10 @@ export default function App() {
 
   const visibleWorkouts = showDone
     ? workouts
-    : workouts.filter(w => !completions[makeKey(w)]?.done)
+    : workouts.filter(w => {
+        const c = completions[makeKey(w)]
+        return !c?.done && !c?.skipped
+      })
 
   return (
     <div className="min-h-screen bg-stone-50 flex flex-col">
@@ -81,7 +84,7 @@ export default function App() {
                 : 'bg-white text-stone-500 border-stone-300'
             }`}
           >
-            {showDone ? 'Hide done' : 'Show done'}
+            {showDone ? 'Hide done' : 'Show all'}
           </button>
           <button
             onClick={handleSwitchUser}
@@ -118,6 +121,7 @@ export default function App() {
           onMarkDone={markDone}
           onUpdateNote={updateNote}
           onToggleDone={toggleDone}
+          onToggleSkipped={toggleSkipped}
           makeKey={makeKey}
         />
       </main>

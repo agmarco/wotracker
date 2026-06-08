@@ -54,5 +54,16 @@ export function useCompletions() {
     })
   }, [setCompletions])
 
-  return { completions, markDone, updateNote, toggleDone }
+  const toggleSkipped = useCallback((key) => {
+    setCompletions(prev => {
+      if (prev[key]?.skipped) {
+        const next = { ...prev }
+        delete next[key]
+        return next
+      }
+      return { ...prev, [key]: { done: false, skipped: true, note: prev[key]?.note || '', completedAt: new Date().toISOString() } }
+    })
+  }, [setCompletions])
+
+  return { completions, markDone, updateNote, toggleDone, toggleSkipped }
 }

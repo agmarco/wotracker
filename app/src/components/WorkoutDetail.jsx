@@ -7,13 +7,14 @@ const typeConfig = {
   race:     { bg: 'bg-amber-50',  border: 'border-amber-200',  badge: 'bg-amber-100 text-amber-700',  icon: '🏁' },
 }
 
-export default function WorkoutDetail({ workout, workoutKey, completion, onMarkDone, onUpdateNote, onToggleDone, showDate }) {
+export default function WorkoutDetail({ workout, workoutKey, completion, onMarkDone, onUpdateNote, onToggleDone, onToggleSkipped, showDate }) {
   const [editingNote, setEditingNote] = useState(false)
   const [noteText, setNoteText] = useState(completion?.note || '')
 
   const type = workout.type || 'run'
   const cfg = typeConfig[type] || typeConfig.run
   const isDone = completion?.done
+  const isSkipped = completion?.skipped
   const isRestOrStrength = type === 'rest' || type === 'strength'
 
   function handleSaveNote() {
@@ -27,7 +28,7 @@ export default function WorkoutDetail({ workout, workoutKey, completion, onMarkD
   }
 
   return (
-    <div className={`rounded-2xl border-2 ${isDone ? 'border-green-300 bg-green-50' : `${cfg.border} ${cfg.bg}`} p-5 transition-all`}>
+    <div className={`rounded-2xl border-2 ${isDone ? 'border-green-300 bg-green-50' : isSkipped ? 'border-stone-300 bg-stone-100' : `${cfg.border} ${cfg.bg}`} p-5 transition-all`}>
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="flex-1 min-w-0">
@@ -38,6 +39,7 @@ export default function WorkoutDetail({ workout, workoutKey, completion, onMarkD
             {workout.recovery && <span className="text-xs bg-orange-100 text-orange-600 font-semibold px-2 py-0.5 rounded-full">Recovery week</span>}
             {workout.peak && <span className="text-xs bg-red-100 text-red-600 font-semibold px-2 py-0.5 rounded-full">Peak week</span>}
             {isDone && <span className="text-xs bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full">✓ Done</span>}
+            {isSkipped && <span className="text-xs bg-stone-200 text-stone-500 font-semibold px-2 py-0.5 rounded-full">⊘ Skipped</span>}
           </div>
           <h3 className="font-bold text-stone-900 text-base leading-tight">{workout.title}</h3>
           {showDate && workout.date && (
@@ -81,17 +83,31 @@ export default function WorkoutDetail({ workout, workoutKey, completion, onMarkD
               )}
             </div>
           )}
-          {!isDone && !editingNote && (
-            <div className="flex gap-2">
-              <button
-                onClick={handleMarkDone}
-                className="flex-1 bg-green-500 text-white font-semibold rounded-xl py-2.5 text-sm active:scale-95 transition-all"
-              >
-                Mark done
-              </button>
+          {isSkipped && (
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm text-stone-500">⊘ Marked as skipped</p>
+              <button onClick={() => onToggleSkipped(workoutKey)} className="text-xs text-stone-400 hover:text-stone-600">undo</button>
+            </div>
+          )}
+          {!isDone && !isSkipped && !editingNote && (
+            <div>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleMarkDone}
+                  className="flex-1 bg-green-500 text-white font-semibold rounded-xl py-2.5 text-sm active:scale-95 transition-all"
+                >
+                  Mark done
+                </button>
+                <button
+                  onClick={() => onToggleSkipped(workoutKey)}
+                  className="flex-1 bg-white border border-stone-300 text-stone-600 font-semibold rounded-xl py-2.5 text-sm active:scale-95 transition-all"
+                >
+                  Skip
+                </button>
+              </div>
               <button
                 onClick={() => setEditingNote(true)}
-                className="px-3 bg-white border border-stone-300 text-stone-600 font-semibold rounded-xl py-2.5 text-sm active:scale-95 transition-all"
+                className="mt-2 w-full bg-white border border-stone-200 text-stone-500 font-semibold rounded-xl py-2 text-sm active:scale-95 transition-all"
               >
                 + note
               </button>
