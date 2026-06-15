@@ -67,3 +67,54 @@ export function useCompletions() {
 
   return { completions, markDone, updateNote, toggleDone, toggleSkipped }
 }
+
+// Goal overrides: { [workoutKey]: string }
+export function useGoalOverrides() {
+  const [overrides, setOverrides] = useLocalState('wotracker_overrides', {})
+
+  const setGoal = useCallback((key, goal) => {
+    setOverrides(prev => {
+      if (!goal.trim()) {
+        const next = { ...prev }
+        delete next[key]
+        return next
+      }
+      return { ...prev, [key]: goal.trim() }
+    })
+  }, [setOverrides])
+
+  return { overrides, setGoal }
+}
+
+const EXPORT_KEYS = ['wotracker_completions', 'wotracker_overrides', 'wotracker_user', 'wotracker_abi_start']
+
+export function exportData() {
+  const data = {}
+  for (const key of EXPORT_KEYS) {
+    const v = localStorage.getItem(key)
+    if (v !== null) data[key] = JSON.parse(v)
+  }
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `wotracker-backup-${new Date().toISOString().slice(0, 10)}.json`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+export function importData(file, onDone) {
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result)
+      for (const key of EXPORT_KEYS) {
+        if (key in data) localStorage.setItem(key, JSON.stringify(data[key]))
+      }
+      onDone(null)
+    } catch {
+      onDone('Invalid file — could not parse JSON.')
+    }
+  }
+  reader.readAsText(file)
+}

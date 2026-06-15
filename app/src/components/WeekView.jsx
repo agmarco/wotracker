@@ -1,7 +1,7 @@
 import WorkoutDetail from './WorkoutDetail'
 import { isToday } from '../utils/planUtils'
 
-export default function WeekView({ workouts, weekLabel, phaseLabel, completions, onMarkDone, onUpdateNote, onToggleDone, onToggleSkipped, makeKey }) {
+export default function WeekView({ workouts, weekLabel, phaseLabel, completions, onMarkDone, onUpdateNote, onToggleDone, onToggleSkipped, makeKey, goalOverrides, onUpdateGoal }) {
   return (
     <div>
       <div className="flex items-baseline justify-between mb-4">
@@ -26,6 +26,8 @@ export default function WeekView({ workouts, weekLabel, phaseLabel, completions,
                 onToggleDone={onToggleDone}
                 onToggleSkipped={onToggleSkipped}
                 showDate={!!w.date}
+                goalOverride={goalOverrides?.[key]}
+                onUpdateGoal={onUpdateGoal}
               />
             </div>
           )

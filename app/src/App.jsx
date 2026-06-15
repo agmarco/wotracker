@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import UserPicker from './components/UserPicker'
 import AbiSetup from './components/AbiSetup'
 import WeekView from './components/WeekView'
-import { useLocalState, useCompletions } from './hooks/useStorage'
+import { useLocalState, useCompletions, useGoalOverrides, exportData, importData } from './hooks/useStorage'
 import { getMarcoWeekWorkouts, getMarcoCurrentWeek, getAbiCurrentWeek, marcoWorkoutKey, abiWorkoutKey, today } from './utils/planUtils'
 import { getAbiWeek, abiTotalWeeks } from './data/abi-plan'
 import marcoPlan from './data/marco-plan'
@@ -13,8 +13,13 @@ export default function App() {
   const [user, setUser] = useLocalState('wotracker_user', null)
   const [abiStartDate, setAbiStartDate] = useLocalState('wotracker_abi_start', null)
   const { completions, markDone, updateNote, toggleDone, toggleSkipped } = useCompletions()
+  const { overrides, setGoal } = useGoalOverrides()
   const [viewWeek, setViewWeek] = useState(null)
   const [showDone, setShowDone] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
+  const [importError, setImportError] = useState(null)
+  const [importSuccess, setImportSuccess] = useState(false)
+  const importRef = useRef(null)
 
   function handleSelectUser(u) {
     setUser(u)
@@ -24,6 +29,20 @@ export default function App() {
   function handleSwitchUser() {
     setUser(null)
     setViewWeek(null)
+  }
+
+  function handleImportFile(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    importData(file, (err) => {
+      if (err) {
+        setImportError(err)
+      } else {
+        setImportSuccess(true)
+        setTimeout(() => window.location.reload(), 1000)
+      }
+    })
+    e.target.value = ''
   }
 
   if (!user) return <UserPicker onSelect={handleSelectUser} />
@@ -90,6 +109,13 @@ export default function App() {
             {showDone ? 'Hide done' : 'Show all'}
           </button>
           <button
+            onClick={() => setShowSettings(v => !v)}
+            className="w-8 h-8 flex items-center justify-center rounded-lg border border-stone-300 bg-white text-stone-500 hover:bg-stone-50 active:scale-95 transition-all text-base"
+            title="Settings"
+          >
+            ⚙
+          </button>
+          <button
             onClick={handleSwitchUser}
             className={`flex items-center gap-2 ${avatarBg} rounded-full pl-2 pr-3 py-1.5 text-sm font-semibold active:scale-95 transition-all`}
           >
@@ -100,6 +126,33 @@ export default function App() {
           </button>
         </div>
       </header>
+
+      {/* Settings panel */}
+      {showSettings && (
+        <div className="bg-stone-100 border-b border-stone-200 px-4 py-4">
+          <div className="max-w-lg mx-auto">
+            <h3 className="text-sm font-bold text-stone-700 mb-3">Data &amp; Backup</h3>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => { exportData(); setShowSettings(false) }}
+                className="flex items-center gap-2 bg-white border border-stone-300 text-stone-700 font-semibold rounded-xl px-4 py-2.5 text-sm active:scale-95 transition-all hover:bg-stone-50"
+              >
+                <span>⬇</span> Export data
+              </button>
+              <button
+                onClick={() => importRef.current?.click()}
+                className="flex items-center gap-2 bg-white border border-stone-300 text-stone-700 font-semibold rounded-xl px-4 py-2.5 text-sm active:scale-95 transition-all hover:bg-stone-50"
+              >
+                <span>⬆</span> Import data
+              </button>
+              <input ref={importRef} type="file" accept=".json" className="hidden" onChange={handleImportFile} />
+              {importError && <p className="text-xs text-red-600 font-medium">{importError}</p>}
+              {importSuccess && <p className="text-xs text-green-600 font-semibold">Import successful — reloading…</p>}
+              <p className="text-xs text-stone-400 mt-1">Export saves all workouts, notes, goal adjustments, and settings as a JSON file you can import on any device.</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Body */}
       <main className="flex-1 px-4 py-5 max-w-lg mx-auto w-full pb-28">
@@ -126,6 +179,8 @@ export default function App() {
           onToggleDone={toggleDone}
           onToggleSkipped={toggleSkipped}
           makeKey={makeKey}
+          goalOverrides={overrides}
+          onUpdateGoal={setGoal}
         />
       </main>
 

@@ -7,9 +7,11 @@ const typeConfig = {
   race:     { bg: 'bg-amber-50',  border: 'border-amber-200',  badge: 'bg-amber-100 text-amber-700',  icon: '🏁' },
 }
 
-export default function WorkoutDetail({ workout, workoutKey, completion, onMarkDone, onUpdateNote, onToggleDone, onToggleSkipped, showDate }) {
+export default function WorkoutDetail({ workout, workoutKey, completion, onMarkDone, onUpdateNote, onToggleDone, onToggleSkipped, showDate, goalOverride, onUpdateGoal }) {
   const [editingNote, setEditingNote] = useState(false)
   const [noteText, setNoteText] = useState(completion?.note || '')
+  const [editingGoal, setEditingGoal] = useState(false)
+  const [goalText, setGoalText] = useState(goalOverride || '')
 
   const type = workout.type || 'run'
   const cfg = typeConfig[type] || typeConfig.run
@@ -25,6 +27,17 @@ export default function WorkoutDetail({ workout, workoutKey, completion, onMarkD
   function handleMarkDone() {
     onMarkDone(workoutKey, noteText)
     setEditingNote(false)
+  }
+
+  function handleSaveGoal() {
+    onUpdateGoal(workoutKey, goalText)
+    setEditingGoal(false)
+  }
+
+  function handleClearGoal() {
+    onUpdateGoal(workoutKey, '')
+    setGoalText('')
+    setEditingGoal(false)
   }
 
   return (
@@ -67,6 +80,58 @@ export default function WorkoutDetail({ workout, workoutKey, completion, onMarkD
           </li>
         ))}
       </ul>
+
+      {/* Goal override — only for runs and races */}
+      {!isRestOrStrength && onUpdateGoal && (
+        <div className="mb-3">
+          {!editingGoal ? (
+            goalOverride ? (
+              <div className="flex items-center justify-between gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                <span className="text-sm font-semibold text-amber-800">🎯 Goal: {goalOverride}</span>
+                <button
+                  onClick={() => { setGoalText(goalOverride); setEditingGoal(true) }}
+                  className="text-xs text-amber-500 hover:text-amber-700 flex-shrink-0"
+                >
+                  edit
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => { setGoalText(''); setEditingGoal(true) }}
+                className="text-xs text-stone-400 hover:text-stone-600"
+              >
+                ✏ Adjust goal
+              </button>
+            )
+          ) : (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+              <p className="text-xs font-semibold text-amber-700 mb-1.5">Custom goal (e.g. "6 miles")</p>
+              <input
+                autoFocus
+                type="text"
+                value={goalText}
+                onChange={e => setGoalText(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleSaveGoal(); if (e.key === 'Escape') setEditingGoal(false) }}
+                placeholder={workout.title}
+                className="w-full border border-amber-300 rounded-lg px-3 py-1.5 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white mb-2"
+              />
+              <div className="flex gap-2">
+                <button onClick={handleSaveGoal} className="flex-1 bg-amber-500 text-white font-semibold rounded-lg py-1.5 text-sm active:scale-95 transition-all">
+                  Save
+                </button>
+                {goalOverride && (
+                  <button onClick={handleClearGoal} className="px-3 bg-white border border-stone-300 text-stone-500 font-semibold rounded-lg py-1.5 text-sm active:scale-95 transition-all">
+                    Clear
+                  </button>
+                )}
+                <button onClick={() => setEditingGoal(false)} className="px-3 bg-white border border-stone-200 text-stone-500 font-semibold rounded-lg py-1.5 text-sm active:scale-95 transition-all">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Note section — only for runs and races */}
       {!isRestOrStrength && (
